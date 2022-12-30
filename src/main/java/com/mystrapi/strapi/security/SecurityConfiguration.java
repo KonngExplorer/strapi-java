@@ -1,9 +1,13 @@
 package com.mystrapi.strapi.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mystrapi.strapi.bo.AuthorityBO;
+import com.mystrapi.strapi.bo.UserBO;
+import com.mystrapi.strapi.jpa.entity.Authority;
 import com.mystrapi.strapi.view.ViewResult;
 import com.mystrapi.strapi.view.login.LoginView;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,11 +16,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * 安全配置
@@ -25,6 +29,7 @@ import java.nio.charset.StandardCharsets;
  */
 @Configuration
 @EnableWebSecurity
+@Slf4j
 public class SecurityConfiguration {
 
     @Value("${strapi.login.verifyCodeRequire:false}")
@@ -42,7 +47,8 @@ public class SecurityConfiguration {
         strapiAuthenticationFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
             setAjaxResponse(response);
             PrintWriter printWriter = response.getWriter();
-            LoginView loginView = LoginView.builder().build();
+            List<String> authorities = ((UserBO) authentication.getPrincipal()).getAuthorityBOList().stream().map(AuthorityBO::getAuthority).map(Authority::getAuth).toList();
+            LoginView loginView = LoginView.builder().username(authentication.getName()).authorities(authorities).build();
             ViewResult<LoginView> viewViewResult = ViewResult.success(loginView);
             printWriter.write(objectMapper.writeValueAsString(viewViewResult));
             printWriter.flush();
@@ -54,6 +60,7 @@ public class SecurityConfiguration {
             if (exception instanceof BadVerifyCodeAuthenticationException) {
                 viewViewResult = ViewResult.failure("验证码错误", null);
             } else {
+                log.debug("[登录失败]", exception);
                 viewViewResult = ViewResult.failure("[登录失败] " + exception.getMessage(), null);
             }
             PrintWriter printWriter = response.getWriter();
@@ -66,6 +73,7 @@ public class SecurityConfiguration {
                 .csrf().disable()
                 .cors().disable()
                 .authorizeHttpRequests()
+                .requestMatchers("/**").authenticated()
                 .requestMatchers("/login/doLogin").permitAll()
                 .and()
                 .addFilterBefore(strapiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
