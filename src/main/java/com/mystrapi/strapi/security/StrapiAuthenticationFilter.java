@@ -11,6 +11,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +27,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
     private final Boolean verifyCodeRequire;
     private final ObjectMapper objectMapper;
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     private final ThreadLocal<LoginForm> loginFormThreadLocal = new ThreadLocal<>();
 

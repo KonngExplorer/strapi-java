@@ -2,8 +2,8 @@ package com.mystrapi.strapi.web.controller;
 
 import com.mystrapi.strapi.jpa.entity.User;
 import com.mystrapi.strapi.service.UserService;
+import com.mystrapi.strapi.view.ViewResult;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -23,7 +23,7 @@ public class UserController {
 
     @ResponseBody
     @GetMapping("/findAllUser")
-    public HttpEntity<List<User>> findAllUser() {
+    public ViewResult<List<User>> findAllUser() {
         return userService.findAllUser();
     }
 

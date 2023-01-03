@@ -8,11 +8,11 @@ import com.mystrapi.strapi.jpa.entity.UserAuthority;
 import com.mystrapi.strapi.repository.AuthorityRepository;
 import com.mystrapi.strapi.repository.UserAuthorityRepository;
 import com.mystrapi.strapi.repository.UserRepository;
+import com.mystrapi.strapi.view.ViewResult;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.http.HttpEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -51,8 +51,8 @@ public class UserService implements UserDetailsManager {
         this.userAuthorityRepository = userAuthorityRepository;
     }
 
-    public HttpEntity<List<User>> findAllUser() {
-        return new HttpEntity<>(userRepository.findAll());
+    public ViewResult<List<User>> findAllUser() {
+        return ViewResult.success(userRepository.findAll());
     }
 
     @Override

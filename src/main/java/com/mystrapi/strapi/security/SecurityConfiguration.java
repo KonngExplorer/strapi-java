@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -69,12 +70,12 @@ public class SecurityConfiguration {
             printWriter.close();
         });
         strapiAuthenticationFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
+        strapiAuthenticationFilter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
         SecurityFilterChain securityFilterChain = http
                 .csrf().disable()
                 .cors().disable()
                 .authorizeHttpRequests()
                 .requestMatchers("/**").authenticated()
-                .requestMatchers("/login/doLogin").permitAll()
                 .and()
                 .addFilterBefore(strapiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
