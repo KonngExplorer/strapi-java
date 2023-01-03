@@ -70,6 +70,7 @@ public class SecurityConfiguration {
             printWriter.close();
         });
         strapiAuthenticationFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
+        // 使用session方式存储context
         strapiAuthenticationFilter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
         SecurityFilterChain securityFilterChain = http
                 .csrf().disable()
@@ -77,6 +78,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests()
                 .requestMatchers("/**").authenticated()
                 .and()
+                // 替换UsernamePasswordAuthenticationFilter
                 .addFilterBefore(strapiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
         strapiAuthenticationFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
