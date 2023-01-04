@@ -1,6 +1,6 @@
-package com.mystrapi.strapi.bo;
+package com.mystrapi.strapi.bs.bo;
 
-import com.mystrapi.strapi.jpa.entity.Authority;
+import com.mystrapi.strapi.persistance.entity.Authority;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

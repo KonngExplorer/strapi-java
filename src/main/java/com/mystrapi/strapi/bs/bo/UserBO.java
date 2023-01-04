@@ -1,6 +1,6 @@
-package com.mystrapi.strapi.bo;
+package com.mystrapi.strapi.bs.bo;
 
-import com.mystrapi.strapi.jpa.entity.User;
+import com.mystrapi.strapi.persistance.entity.User;
 import lombok.Data;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

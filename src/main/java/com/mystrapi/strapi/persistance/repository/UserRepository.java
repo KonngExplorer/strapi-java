@@ -1,6 +1,6 @@
-package com.mystrapi.strapi.repository;
+package com.mystrapi.strapi.persistance.repository;
 
-import com.mystrapi.strapi.jpa.entity.User;
+import com.mystrapi.strapi.persistance.entity.User;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

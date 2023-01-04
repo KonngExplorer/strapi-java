@@ -1,14 +1,14 @@
-package com.mystrapi.strapi.service;
+package com.mystrapi.strapi.bs.service;
 
-import com.mystrapi.strapi.bo.AuthorityBO;
-import com.mystrapi.strapi.bo.UserBO;
-import com.mystrapi.strapi.jpa.entity.Authority;
-import com.mystrapi.strapi.jpa.entity.User;
-import com.mystrapi.strapi.jpa.entity.UserAuthority;
-import com.mystrapi.strapi.repository.AuthorityRepository;
-import com.mystrapi.strapi.repository.UserAuthorityRepository;
-import com.mystrapi.strapi.repository.UserRepository;
-import com.mystrapi.strapi.view.ViewResult;
+import com.mystrapi.strapi.bs.bo.AuthorityBO;
+import com.mystrapi.strapi.bs.bo.UserBO;
+import com.mystrapi.strapi.persistance.entity.Authority;
+import com.mystrapi.strapi.persistance.entity.User;
+import com.mystrapi.strapi.persistance.entity.UserAuthority;
+import com.mystrapi.strapi.persistance.repository.AuthorityRepository;
+import com.mystrapi.strapi.persistance.repository.UserAuthorityRepository;
+import com.mystrapi.strapi.persistance.repository.UserRepository;
+import com.mystrapi.strapi.web.view.ViewResult;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

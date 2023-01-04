@@ -1,4 +1,4 @@
-package com.mystrapi.strapi.view.login;
+package com.mystrapi.strapi.web.view.login;
 
 import lombok.Builder;
 import lombok.Data;

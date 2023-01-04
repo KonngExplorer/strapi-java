@@ -1,4 +1,4 @@
-package com.mystrapi.strapi.view;
+package com.mystrapi.strapi.web.view;
 
 import lombok.Data;
 import org.jetbrains.annotations.Contract;

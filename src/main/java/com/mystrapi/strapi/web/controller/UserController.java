@@ -1,8 +1,8 @@
 package com.mystrapi.strapi.web.controller;
 
-import com.mystrapi.strapi.jpa.entity.User;
-import com.mystrapi.strapi.service.UserService;
-import com.mystrapi.strapi.view.ViewResult;
+import com.mystrapi.strapi.persistance.entity.User;
+import com.mystrapi.strapi.bs.service.UserService;
+import com.mystrapi.strapi.web.view.ViewResult;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

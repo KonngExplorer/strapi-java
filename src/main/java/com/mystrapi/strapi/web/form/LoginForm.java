@@ -1,4 +1,4 @@
-package com.mystrapi.strapi.form;
+package com.mystrapi.strapi.web.form;
 
 import lombok.Data;
 

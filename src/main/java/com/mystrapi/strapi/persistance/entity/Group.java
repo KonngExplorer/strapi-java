@@ -1,4 +1,4 @@
-package com.mystrapi.strapi.jpa.entity;
+package com.mystrapi.strapi.persistance.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
