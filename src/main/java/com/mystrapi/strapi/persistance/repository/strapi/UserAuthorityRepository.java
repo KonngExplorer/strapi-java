@@ -2,12 +2,14 @@ package com.mystrapi.strapi.persistance.repository.strapi;
 
 import com.mystrapi.strapi.persistance.entity.strapi.UserAuthority;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 /**
  * @author tangqiang
  */
+@Repository
 public interface UserAuthorityRepository extends JpaRepository<UserAuthority, Long> {
     /**
      * 删除关联关系
