@@ -21,10 +21,4 @@ public class UserController {
 
     private final UserService userService;
 
-    @ResponseBody
-    @GetMapping("/findAllUser")
-    public ViewResult<List<User>> findAllUser() {
-        return userService.findAllUser();
-    }
-
 }

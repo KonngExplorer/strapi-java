@@ -1,8 +1,10 @@
 package com.mystrapi.strapi.bs.bo;
 
 import com.mystrapi.strapi.persistance.entity.strapi.Group;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -11,6 +13,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class GroupBO {
     private Group group;
     private List<UserBO> userBOList;

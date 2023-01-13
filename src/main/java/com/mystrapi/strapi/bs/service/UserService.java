@@ -5,11 +5,11 @@ import com.mystrapi.strapi.bs.bo.GroupBO;
 import com.mystrapi.strapi.bs.bo.UserBO;
 import com.mystrapi.strapi.persistance.entity.strapi.*;
 import com.mystrapi.strapi.persistance.repository.strapi.*;
-import com.mystrapi.strapi.web.view.ViewResult;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,10 +23,11 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author tangqiang
@@ -34,7 +35,7 @@ import java.util.List;
 @Data
 @Service
 @Slf4j
-public class UserService implements UserDetailsManager {
+public class UserService implements UserDetailsManager, AuditorAware<String> {
 
     private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
             .getContextHolderStrategy();
@@ -44,35 +45,41 @@ public class UserService implements UserDetailsManager {
     private final AuthorityRepository authorityRepository;
     private final UserAuthorityRepository userAuthorityRepository;
     private final GroupRepository groupRepository;
-    private final GroupUserRepository groupUserRepository;
+    private final UserGroupRepository userGroupRepository;
     private final GroupAuthorityRepository groupAuthorityRepository;
 
-    public UserService(UserRepository userRepository, AuthorityRepository authorityRepository, UserAuthorityRepository userAuthorityRepository, GroupRepository groupRepository, GroupUserRepository groupUserRepository, GroupAuthorityRepository groupAuthorityRepository) {
+    public UserService(UserRepository userRepository,
+                       AuthorityRepository authorityRepository,
+                       UserAuthorityRepository userAuthorityRepository,
+                       GroupRepository groupRepository,
+                       UserGroupRepository userGroupRepository,
+                       GroupAuthorityRepository groupAuthorityRepository) {
         this.userRepository = userRepository;
         this.authorityRepository = authorityRepository;
         this.userAuthorityRepository = userAuthorityRepository;
         this.groupRepository = groupRepository;
-        this.groupUserRepository = groupUserRepository;
+        this.userGroupRepository = userGroupRepository;
         this.groupAuthorityRepository = groupAuthorityRepository;
     }
 
-    public ViewResult<List<User>> findAllUser() {
-        return ViewResult.success(userRepository.findAll());
-    }
-
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public void createUser(UserDetails userDetails) {
         UserBO userBO = (UserBO) userDetails;
-        User user = userRepository.save(userBO.getUser());
-//        userBO.setUser(user);
+        userRepository.save(userBO.getUser());
 
-        List<Authority> authorities = userBO.getAuthorityBOList().stream().map(AuthorityBO::getAuthority).toList();
-        authorities = authorityRepository.saveAll(authorities);
-//        userBO.setAuthorityBOList(authorities.stream().map(AuthorityBO::new).toList());
+        List<Authority> uAuthorities = userBO.getAuthorityBOList().stream().map(AuthorityBO::getAuthority).toList();
+        List<Authority> gAuthorities = userBO.getGroupBOList().stream()
+                .flatMap(groupBO -> groupBO.getAuthorityBOList().stream())
+                .map(AuthorityBO::getAuthority)
+                .toList();
+        List<Authority> authorities = Stream.of(uAuthorities, gAuthorities)
+                .flatMap(Collection::stream).unordered().distinct().collect(Collectors.toList());
+        authorityRepository.saveAll(authorities);
 
         List<UserAuthority> userAuthorities = authorities.stream().map(authority -> {
             long authorityId = authority.getId();
-            return UserAuthority.builder().userId(user.getId()).authorityId(authorityId).build();
+            return UserAuthority.builder().userId(userBO.getUser().getId()).authorityId(authorityId).build();
         }).toList();
         userAuthorityRepository.saveAll(userAuthorities);
 
@@ -80,9 +87,9 @@ public class UserService implements UserDetailsManager {
         groupRepository.saveAll(groups);
 
         List<UserGroup> userGroups = groups.stream()
-                .map(group -> UserGroup.builder().groupId(group.getId()).userId(user.getId()).build())
+                .map(group -> UserGroup.builder().groupId(group.getId()).userId(userBO.getUser().getId()).build())
                 .toList();
-        groupUserRepository.saveAll(userGroups);
+        userGroupRepository.saveAll(userGroups);
 
         List<GroupAuthority> allGroupAuthorities = new ArrayList<>();
         for (Group group : groups) {
@@ -97,25 +104,33 @@ public class UserService implements UserDetailsManager {
         groupAuthorityRepository.saveAll(allGroupAuthorities);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public void updateUser(UserDetails userDetails) {
         UserBO userBO = (UserBO) userDetails;
-        User user = userRepository.save(((UserBO) userDetails).getUser());
-        userAuthorityRepository.deleteUserAuthoritiesByUserId(user.getId());
+        userRepository.save(((UserBO) userDetails).getUser());
+        userAuthorityRepository.deleteUserAuthoritiesByUserId(userBO.getUser().getId());
         List<UserAuthority> userAuthorities = userBO.getAuthorityBOList().stream()
                 .map(authorityBO -> UserAuthority.builder()
                         .authorityId(authorityBO.getAuthority().getId())
                         .userId(userBO.getUser().getId()).build())
                 .toList();
         userAuthorityRepository.saveAll(userAuthorities);
+        userGroupRepository.deleteUserGroupByUserId(userBO.getUser().getId());
+        List<UserGroup> userGroups = userBO.getGroupBOList().stream().map(groupBO -> UserGroup.builder()
+                .userId(userBO.getUser().getId())
+                .groupId(groupBO.getGroup().getId()).build()).toList();
+        userGroupRepository.saveAll(userGroups);
         // TODO 从缓存中去除
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public void deleteUser(String username) {
         UserDetails userDetails = loadUserByUsername(username);
         long userId = ((UserBO) userDetails).getUser().getId();
         userAuthorityRepository.deleteUserAuthoritiesByUserId(userId);
+        userGroupRepository.deleteUserGroupByUserId(userId);
         userRepository.deleteById(userId);
         // TODO 从缓存中去除
     }
@@ -158,35 +173,61 @@ public class UserService implements UserDetailsManager {
         return userRepository.countUserByUsernameIsAndEnabled(username, true) > 0;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username);
         List<UserAuthority> userAuthorities = userAuthorityRepository.findUserAuthoritiesByUserId(user.getId());
-        List<Authority> authorities = authorityRepository.findAuthoritiesByIdIn(userAuthorities.stream().map(UserAuthority::getAuthorityId).toList());
-        return UserBO.builder()
+        List<Authority> uAuthorities = authorityRepository.findAuthoritiesByIdIn(userAuthorities.stream().map(UserAuthority::getAuthorityId).toList());
+        List<UserGroup> userGroups = userGroupRepository.findUserGroupByUserId(user.getId());
+        List<Group> groups = groupRepository.findGroupsByIdIn(userGroups.stream().map(UserGroup::getGroupId).toList());
+        List<GroupAuthority> groupAuthorities = groupAuthorityRepository.findGroupAuthoritiesByGroupIdIn(groups.stream().map(Group::getId).toList());
+        List<Authority> gAuthorities = authorityRepository.findAuthoritiesByIdIn(groupAuthorities.stream().map(GroupAuthority::getAuthorityId).toList());
+
+        UserBO userBO = UserBO.builder()
                 .user(user)
-                .authorityBOList(authorities.stream().map(AuthorityBO::new).toList())
+                .groupBOList(groups.stream().map(group -> GroupBO.builder()
+                        .group(group)
+                        .authorityBOList(gAuthorities.stream().map(AuthorityBO::new).toList())
+                        .build()).toList())
+                .authorityBOList(uAuthorities.stream().map(AuthorityBO::new).toList())
                 .build();
+        userBO.getGroupBOList().forEach(groupBO -> {
+            groupBO.setUserBOList(Collections.singletonList(userBO));
+        });
+        return userBO;
+    }
+
+    @Override
+    public @NotNull Optional<String> getCurrentAuditor() {
+        SecurityContext ctx = SecurityContextHolder.getContext();
+        String username =
+                Optional.of(ctx).map(SecurityContext::getAuthentication)
+                        .map(authentication -> authentication.getPrincipal().toString()).orElse("system");
+        return Optional.of(username);
     }
 
     @PostConstruct
     public void initSomeUsers() {
         PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
         User user = User.builder().id(1L).username("admin").password("123456").enabled(true).build();
-        Authority authority = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
-        AuthorityBO authorityBO = AuthorityBO.builder().authority(authority).build();
+        Authority authority4u = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
+        Authority authority4g = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
+        AuthorityBO userAuthorityBO = AuthorityBO.builder().authority(authority4u).build();
+        AuthorityBO groupAuthorityBO = AuthorityBO.builder().authority(authority4g).build();
         Group group = Group.builder().id(1L).group("测试部门1").build();
         GroupBO groupBO = GroupBO.builder()
                 .group(group)
                 .userBOList(new ArrayList<>())
-                .authorityBOList(Collections.singletonList(authorityBO)).build();
+                .authorityBOList(Collections.singletonList(groupAuthorityBO)).build();
         UserBO userBO = UserBO.builder()
                 .user(user)
-                .authorityBOList(List.of(authorityBO))
+                .authorityBOList(List.of(userAuthorityBO))
                 .groupBOList(Collections.singletonList(groupBO))
                 .passwordEncoder(passwordEncoder::encode).build();
         groupBO.setUserBOList(Collections.singletonList(userBO));
         this.createUser(userBO);
     }
+
 
 }

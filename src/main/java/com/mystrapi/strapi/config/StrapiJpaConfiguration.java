@@ -16,6 +16,7 @@ import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -37,6 +38,7 @@ import javax.sql.DataSource;
         basePackageClasses = UserRepository.class,
         bootstrapMode = BootstrapMode.LAZY)
 @EnableTransactionManagement
+@EnableJpaAuditing
 public class StrapiJpaConfiguration {
 
     @Bean(name = "strapiDataSourceProperties")
