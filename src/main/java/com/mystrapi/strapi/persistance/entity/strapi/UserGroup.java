@@ -9,16 +9,16 @@ import org.hibernate.annotations.GenericGenerator;
  */
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "group_user")
+@Table(name = "user_group")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GroupUser extends BaseEntity {
+public class UserGroup extends BaseEntity {
     @Id
     @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_group_user_pk")
-    @GenericGenerator(name = "strapi_group_user_pk", strategy = "identity")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_user_group_pk")
+    @GenericGenerator(name = "strapi_user_group_pk", strategy = "identity")
     private Long id;
     @Basic(optional = false)
     @Column(name = "group_id", nullable = false)

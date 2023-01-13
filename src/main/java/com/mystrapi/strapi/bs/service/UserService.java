@@ -79,10 +79,10 @@ public class UserService implements UserDetailsManager {
         List<Group> groups = userBO.getGroupBOList().stream().map(GroupBO::getGroup).toList();
         groupRepository.saveAll(groups);
 
-        List<GroupUser> groupUsers = groups.stream()
-                .map(group -> GroupUser.builder().groupId(group.getId()).userId(user.getId()).build())
+        List<UserGroup> userGroups = groups.stream()
+                .map(group -> UserGroup.builder().groupId(group.getId()).userId(user.getId()).build())
                 .toList();
-        groupUserRepository.saveAll(groupUsers);
+        groupUserRepository.saveAll(userGroups);
 
         List<GroupAuthority> allGroupAuthorities = new ArrayList<>();
         for (Group group : groups) {
