@@ -1,22 +1,20 @@
-package com.mystrapi.strapi.persistance.entity;
+package com.mystrapi.strapi.persistance.entity.strapi;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 /**
  * @author tangqiang
  */
-@Entity
-@Table(name = "strapi_user_authority")
+@EqualsAndHashCode(callSuper = true)
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-public class UserAuthority {
+@Entity
+@Table(name = "strapi_user_authority")
+public class UserAuthority extends BaseEntity{
 
     @Id
     @Column(name = "id")

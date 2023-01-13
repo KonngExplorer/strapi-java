@@ -1,6 +1,6 @@
 package com.mystrapi.strapi.web.controller;
 
-import com.mystrapi.strapi.persistance.entity.User;
+import com.mystrapi.strapi.persistance.entity.strapi.User;
 import com.mystrapi.strapi.bs.service.UserService;
 import com.mystrapi.strapi.web.view.ViewResult;
 import lombok.AllArgsConstructor;

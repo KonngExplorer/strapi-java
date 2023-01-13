@@ -1,6 +1,6 @@
 package com.mystrapi.strapi.bs.bo;
 
-import com.mystrapi.strapi.persistance.entity.User;
+import com.mystrapi.strapi.persistance.entity.strapi.User;
 import lombok.Data;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -20,10 +20,12 @@ public class UserBO implements UserDetails {
 
     private User user;
     private List<AuthorityBO> authorityBOList;
+    private List<GroupBO> groupBOList;
 
-    public UserBO(User user, List<AuthorityBO> authorityBOList) {
+    public UserBO(User user, List<AuthorityBO> authorityBOList, List<GroupBO> groupBOList) {
         this.user = user;
         this.authorityBOList = authorityBOList;
+        this.groupBOList = groupBOList;
     }
 
     @Override
@@ -71,6 +73,7 @@ public class UserBO implements UserDetails {
     public static final class UserBuilder {
         private User user;
         private List<AuthorityBO> authorityBOList;
+        private List<GroupBO> groupBOList;
         private Function<String, String> passwordEncoder = (password) -> password;
 
         public UserBuilder user(User user) {
@@ -88,10 +91,15 @@ public class UserBO implements UserDetails {
             return this;
         }
 
+        public UserBuilder groupBOList(List<GroupBO> groupBOList) {
+            this.groupBOList = groupBOList;
+            return this;
+        }
+
         public UserBO build() {
             String encodedPassword = this.passwordEncoder.apply(this.user.getPassword());
             user.setPassword(encodedPassword);
-            return new UserBO(user, this.authorityBOList);
+            return new UserBO(user, this.authorityBOList, groupBOList);
         }
     }
 }

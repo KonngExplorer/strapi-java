@@ -3,7 +3,7 @@ package com.mystrapi.strapi.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mystrapi.strapi.bs.bo.AuthorityBO;
 import com.mystrapi.strapi.bs.bo.UserBO;
-import com.mystrapi.strapi.persistance.entity.Authority;
+import com.mystrapi.strapi.persistance.entity.strapi.Authority;
 import com.mystrapi.strapi.web.view.ViewResult;
 import com.mystrapi.strapi.web.view.login.LoginView;
 import jakarta.servlet.ServletException;

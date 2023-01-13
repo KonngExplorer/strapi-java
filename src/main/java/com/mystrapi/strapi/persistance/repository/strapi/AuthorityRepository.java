@@ -1,6 +1,6 @@
-package com.mystrapi.strapi.persistance.repository;
+package com.mystrapi.strapi.persistance.repository.strapi;
 
-import com.mystrapi.strapi.persistance.entity.Authority;
+import com.mystrapi.strapi.persistance.entity.strapi.Authority;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,7 +1,7 @@
 package com.mystrapi.strapi.config;
 
-import com.mystrapi.strapi.persistance.entity.User;
-import com.mystrapi.strapi.persistance.repository.UserRepository;
+import com.mystrapi.strapi.persistance.entity.strapi.User;
+import com.mystrapi.strapi.persistance.repository.strapi.UserRepository;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.SharedCacheMode;
 import org.hibernate.cfg.AvailableSettings;

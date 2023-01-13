@@ -1,16 +1,20 @@
-package com.mystrapi.strapi.persistance.entity;
+package com.mystrapi.strapi.persistance.entity.strapi;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 /**
  * @author tangqiang
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "strapi_group")
-public class Group {
+public class Group extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_group_pk")

@@ -1,13 +1,10 @@
 package com.mystrapi.strapi.bs.service;
 
 import com.mystrapi.strapi.bs.bo.AuthorityBO;
+import com.mystrapi.strapi.bs.bo.GroupBO;
 import com.mystrapi.strapi.bs.bo.UserBO;
-import com.mystrapi.strapi.persistance.entity.Authority;
-import com.mystrapi.strapi.persistance.entity.User;
-import com.mystrapi.strapi.persistance.entity.UserAuthority;
-import com.mystrapi.strapi.persistance.repository.AuthorityRepository;
-import com.mystrapi.strapi.persistance.repository.UserAuthorityRepository;
-import com.mystrapi.strapi.persistance.repository.UserRepository;
+import com.mystrapi.strapi.persistance.entity.strapi.*;
+import com.mystrapi.strapi.persistance.repository.strapi.*;
 import com.mystrapi.strapi.web.view.ViewResult;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
@@ -27,6 +24,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,11 +43,17 @@ public class UserService implements UserDetailsManager {
     private final UserRepository userRepository;
     private final AuthorityRepository authorityRepository;
     private final UserAuthorityRepository userAuthorityRepository;
+    private final GroupRepository groupRepository;
+    private final GroupUserRepository groupUserRepository;
+    private final GroupAuthorityRepository groupAuthorityRepository;
 
-    public UserService(UserRepository userRepository, AuthorityRepository authorityRepository, UserAuthorityRepository userAuthorityRepository) {
+    public UserService(UserRepository userRepository, AuthorityRepository authorityRepository, UserAuthorityRepository userAuthorityRepository, GroupRepository groupRepository, GroupUserRepository groupUserRepository, GroupAuthorityRepository groupAuthorityRepository) {
         this.userRepository = userRepository;
         this.authorityRepository = authorityRepository;
         this.userAuthorityRepository = userAuthorityRepository;
+        this.groupRepository = groupRepository;
+        this.groupUserRepository = groupUserRepository;
+        this.groupAuthorityRepository = groupAuthorityRepository;
     }
 
     public ViewResult<List<User>> findAllUser() {
@@ -59,15 +64,37 @@ public class UserService implements UserDetailsManager {
     public void createUser(UserDetails userDetails) {
         UserBO userBO = (UserBO) userDetails;
         User user = userRepository.save(userBO.getUser());
-        userBO.setUser(user);
+//        userBO.setUser(user);
+
         List<Authority> authorities = userBO.getAuthorityBOList().stream().map(AuthorityBO::getAuthority).toList();
         authorities = authorityRepository.saveAll(authorities);
-        userBO.setAuthorityBOList(authorities.stream().map(AuthorityBO::new).toList());
+//        userBO.setAuthorityBOList(authorities.stream().map(AuthorityBO::new).toList());
+
         List<UserAuthority> userAuthorities = authorities.stream().map(authority -> {
             long authorityId = authority.getId();
             return UserAuthority.builder().userId(user.getId()).authorityId(authorityId).build();
         }).toList();
         userAuthorityRepository.saveAll(userAuthorities);
+
+        List<Group> groups = userBO.getGroupBOList().stream().map(GroupBO::getGroup).toList();
+        groupRepository.saveAll(groups);
+
+        List<GroupUser> groupUsers = groups.stream()
+                .map(group -> GroupUser.builder().groupId(group.getId()).userId(user.getId()).build())
+                .toList();
+        groupUserRepository.saveAll(groupUsers);
+
+        List<GroupAuthority> allGroupAuthorities = new ArrayList<>();
+        for (Group group : groups) {
+            List<GroupAuthority> groupAuthorities = authorities.stream()
+                    .map(authority -> GroupAuthority.builder()
+                            .authorityId(authority.getId())
+                            .groupId(group.getId())
+                            .build())
+                    .toList();
+            allGroupAuthorities.addAll(groupAuthorities);
+        }
+        groupAuthorityRepository.saveAll(allGroupAuthorities);
     }
 
     @Override
@@ -147,8 +174,18 @@ public class UserService implements UserDetailsManager {
         PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
         User user = User.builder().id(1L).username("admin").password("123456").enabled(true).build();
         Authority authority = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
-        AuthorityBO authorityBO = new AuthorityBO(authority);
-        UserBO userBO = UserBO.builder().user(user).authorityBOList(List.of(authorityBO)).passwordEncoder(passwordEncoder::encode).build();
+        AuthorityBO authorityBO = AuthorityBO.builder().authority(authority).build();
+        Group group = Group.builder().id(1L).group("测试部门1").build();
+        GroupBO groupBO = GroupBO.builder()
+                .group(group)
+                .userBOList(new ArrayList<>())
+                .authorityBOList(Collections.singletonList(authorityBO)).build();
+        UserBO userBO = UserBO.builder()
+                .user(user)
+                .authorityBOList(List.of(authorityBO))
+                .groupBOList(Collections.singletonList(groupBO))
+                .passwordEncoder(passwordEncoder::encode).build();
+        groupBO.setUserBOList(Collections.singletonList(userBO));
         this.createUser(userBO);
     }
 

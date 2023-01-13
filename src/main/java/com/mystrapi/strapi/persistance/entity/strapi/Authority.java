@@ -1,22 +1,20 @@
-package com.mystrapi.strapi.persistance.entity;
+package com.mystrapi.strapi.persistance.entity.strapi;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 /**
  * @author tangqiang
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-@Entity
-@Table(name = "strapi_authority")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Authority {
+@Entity
+@Table(name = "strapi_authority")
+public class Authority extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_authority_pk")
