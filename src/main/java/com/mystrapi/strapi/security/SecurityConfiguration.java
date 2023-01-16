@@ -1,9 +1,12 @@
 package com.mystrapi.strapi.security;
 
+import cn.hutool.core.lang.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mystrapi.strapi.bs.bo.AuthorityBO;
+import com.mystrapi.strapi.bs.bo.GroupBO;
 import com.mystrapi.strapi.bs.bo.UserBO;
 import com.mystrapi.strapi.persistance.entity.strapi.Authority;
+import com.mystrapi.strapi.persistance.entity.strapi.Group;
 import com.mystrapi.strapi.web.view.ViewResult;
 import com.mystrapi.strapi.web.view.login.LoginView;
 import jakarta.servlet.ServletException;
@@ -56,11 +59,15 @@ public class SecurityConfiguration {
             setAjaxResponse(response);
             PrintWriter printWriter = response.getWriter();
             List<String> authorities = ((UserBO) authentication.getPrincipal()).getAuthorityBOList().stream().map(AuthorityBO::getAuthority).map(Authority::getAuth).toList();
-            LoginView loginView = LoginView.builder().username(authentication.getName()).authorities(authorities).build();
+            List<Group> groups = ((UserBO) authentication.getPrincipal()).getGroupBOList().stream().map(GroupBO::getGroup).toList();
+            String token = UUID.randomUUID(true).toString(true);
+            ((UserBO) authentication.getPrincipal()).setToken(token);
+            LoginView loginView = LoginView.builder().token(token).username(authentication.getName()).authorities(authorities).groupList(groups).build();
             ViewResult<LoginView> viewViewResult = ViewResult.success(loginView);
             printWriter.write(objectMapper.writeValueAsString(viewViewResult));
             printWriter.flush();
             printWriter.close();
+
         });
         strapiAuthenticationFilter.setAuthenticationFailureHandler((request, response, exception) -> {
             setAjaxResponse(response);
@@ -107,7 +114,7 @@ public class SecurityConfiguration {
                         public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
                             SecurityConfiguration.this.setAjaxResponse(response);
                             ViewResult<LoginView> viewViewResult;
-                            log.info("[未登录]", authException);
+                            log.warn("[未登录] {}", authException.getMessage());
                             viewViewResult = ViewResult.failure("[未登录] " + authException.getMessage(), null);
                             PrintWriter printWriter = response.getWriter();
                             printWriter.write(objectMapper.writeValueAsString(viewViewResult));

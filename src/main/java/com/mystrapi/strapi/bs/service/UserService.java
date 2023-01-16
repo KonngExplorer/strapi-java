@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 @Data
 @Service
 @Slf4j
-public class UserService implements UserDetailsManager, AuditorAware<String> {
+public class UserService implements UserDetailsManager {
 
     private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
             .getContextHolderStrategy();
@@ -192,19 +192,8 @@ public class UserService implements UserDetailsManager, AuditorAware<String> {
                         .build()).toList())
                 .authorityBOList(uAuthorities.stream().map(AuthorityBO::new).toList())
                 .build();
-        userBO.getGroupBOList().forEach(groupBO -> {
-            groupBO.setUserBOList(Collections.singletonList(userBO));
-        });
+        userBO.getGroupBOList().forEach(groupBO -> groupBO.setUserBOList(Collections.singletonList(userBO)));
         return userBO;
-    }
-
-    @Override
-    public @NotNull Optional<String> getCurrentAuditor() {
-        SecurityContext ctx = SecurityContextHolder.getContext();
-        String username =
-                Optional.of(ctx).map(SecurityContext::getAuthentication)
-                        .map(authentication -> authentication.getPrincipal().toString()).orElse("system");
-        return Optional.of(username);
     }
 
     @PostConstruct

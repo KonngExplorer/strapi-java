@@ -9,7 +9,7 @@ import org.hibernate.annotations.GenericGenerator;
  */
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "group_authrity")
+@Table(name = "strapi_group_authority")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,9 +20,10 @@ public class GroupAuthority extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_group_authority_pk")
     @GenericGenerator(name = "strapi_group_authority_pk", strategy = "identity")
     private Long id;
-    @Basic(optional = false)
+
     @Column(name = "group_id", nullable = false)
     private Long groupId;
+
     @Column(name = "authority_id", nullable = false)
     private Long authorityId;
 }

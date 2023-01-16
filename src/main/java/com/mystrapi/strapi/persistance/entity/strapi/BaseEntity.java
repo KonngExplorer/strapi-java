@@ -1,9 +1,6 @@
 package com.mystrapi.strapi.persistance.entity.strapi;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.MappedSuperclass;
-import org.hibernate.annotations.*;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -18,23 +15,21 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
 public class BaseEntity {
-    @Column(name = "update_time", columnDefinition = "DATETIME", nullable = false)
     @LastModifiedDate
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "update_time", columnDefinition = "DATETIME")
     private LocalDateTime updateTime;
 
-    @Column(name = "create_time", columnDefinition = "DATETIME", nullable = false)
     @CreatedDate
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "create_time", columnDefinition = "DATETIME")
     private LocalDateTime createTime;
 
-    @Generated(GenerationTime.INSERT)
-    @ColumnDefault("\"system\"")
     @LastModifiedBy
-    @Column(name = "update_by", insertable = false, updatable = false)
+    @Column(name = "update_by")
     private String updateBy;
 
-    @Generated(GenerationTime.INSERT)
-    @ColumnDefault("\"system\"")
     @CreatedBy
-    @Column(name = "create_by", insertable = false, updatable = false)
+    @Column(name = "create_by")
     private String createBy;
 }

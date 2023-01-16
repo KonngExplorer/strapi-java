@@ -55,8 +55,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
     }
 
     private boolean validateCode(String verifyCodeToken, String verifyCode) {
-        // TODO 具体的验证码验证逻辑
-        return true;
+        return verifyCodeToken.equalsIgnoreCase(verifyCode);
     }
 
     @Override
@@ -83,6 +82,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
         }
         try (InputStream inputStream = request.getInputStream()) {
             LoginForm loginForm = objectMapper.readValue(inputStream, LoginForm.class);
+            assert loginFormThreadLocal != null;
             loginFormThreadLocal.set(loginForm);
             return loginFormThreadLocal.get();
         } catch (IOException e) {

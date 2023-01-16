@@ -19,4 +19,9 @@ public class GroupBO {
     private Group group;
     private List<UserBO> userBOList;
     private List<AuthorityBO> authorityBOList;
+
+    public String toString() {
+        return "GroupBO(group=" + this.getGroup() + ")";
+    }
+
 }

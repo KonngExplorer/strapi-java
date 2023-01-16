@@ -22,15 +22,12 @@ public class User extends BaseEntity {
     @GenericGenerator(name = "strapi_user_pk", strategy = "identity")
     private Long id;
 
-    @Basic(optional = false)
     @Column(name = "username", nullable = false, length = 100)
     private String username;
 
-    @Basic(optional = false)
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
-    @Basic(optional = false)
     @Column(name = "enabled", nullable = false, length = 1)
     private Boolean enabled;
 

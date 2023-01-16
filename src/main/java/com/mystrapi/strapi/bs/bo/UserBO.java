@@ -21,11 +21,13 @@ public class UserBO implements UserDetails {
     private User user;
     private List<AuthorityBO> authorityBOList;
     private List<GroupBO> groupBOList;
+    private String token;
 
-    public UserBO(User user, List<AuthorityBO> authorityBOList, List<GroupBO> groupBOList) {
+    public UserBO(User user, List<AuthorityBO> authorityBOList, List<GroupBO> groupBOList, String token) {
         this.user = user;
         this.authorityBOList = authorityBOList;
         this.groupBOList = groupBOList;
+        this.token = token;
     }
 
     @Override
@@ -65,6 +67,10 @@ public class UserBO implements UserDetails {
         return this.user.getEnabled();
     }
 
+    public String toString() {
+        return "UserBO(user=" + user + ")";
+    }
+
     @Contract(value = " -> new", pure = true)
     public static @NotNull UserBuilder builder() {
         return new UserBuilder();
@@ -74,6 +80,7 @@ public class UserBO implements UserDetails {
         private User user;
         private List<AuthorityBO> authorityBOList;
         private List<GroupBO> groupBOList;
+        private String token;
         private Function<String, String> passwordEncoder = (password) -> password;
 
         public UserBuilder user(User user) {
@@ -96,10 +103,16 @@ public class UserBO implements UserDetails {
             return this;
         }
 
+        public UserBuilder token(String token) {
+            this.token = token;
+            return this;
+        }
+
         public UserBO build() {
             String encodedPassword = this.passwordEncoder.apply(this.user.getPassword());
             user.setPassword(encodedPassword);
-            return new UserBO(user, this.authorityBOList, groupBOList);
+            return new UserBO(user, this.authorityBOList, groupBOList, token);
         }
     }
+
 }

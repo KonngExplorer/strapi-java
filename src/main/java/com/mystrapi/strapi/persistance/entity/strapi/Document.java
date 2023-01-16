@@ -24,11 +24,9 @@ public class Document extends BaseEntity {
     @GenericGenerator(name = "strapi_user_pk", strategy = "identity")
     private Long id;
 
-    @Basic(optional = false)
     @Column(name = "title")
     private String title;
 
-    @Basic(optional = true)
     @Column(name = "content")
     @JdbcType(LongVarcharJdbcType.class)
     private String content;

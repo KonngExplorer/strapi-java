@@ -22,11 +22,9 @@ public class UserAuthority extends BaseEntity{
     @GenericGenerator(name = "strapi_user_authority_pk", strategy = "identity")
     private Long id;
 
-    @Basic(optional = false)
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Basic(optional = false)
     @Column(name = "authority_id", nullable = false)
     private Long authorityId;
 

@@ -21,7 +21,6 @@ public class Authority extends BaseEntity {
     @GenericGenerator(name = "strapi_authority_pk", strategy = "identity")
     private Long id;
 
-    @Basic(optional = false)
     @Column(name = "auth", unique = true, nullable = false, length = 100)
     private String auth;
 
