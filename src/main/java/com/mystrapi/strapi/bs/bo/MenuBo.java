@@ -1,5 +1,6 @@
 package com.mystrapi.strapi.bs.bo;
 
+
 import com.mystrapi.strapi.persistance.entity.strapi.Authority;
 import com.mystrapi.strapi.persistance.entity.strapi.Menu;
 import lombok.AllArgsConstructor;
@@ -16,8 +17,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthorityBO{
-    private Authority authority;
-
-    private List<Menu> menuList;
+public class MenuBo {
+    private Menu menu;
+    private List<Authority> authorities;
 }

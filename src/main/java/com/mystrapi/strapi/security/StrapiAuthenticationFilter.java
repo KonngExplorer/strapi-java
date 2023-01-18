@@ -42,7 +42,8 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
             String verifyCodeToken = obtainVerifyCodeToken(request);
             String verifyCode = obtainVerifyCode(request);
             if (StrUtil.isNotBlank(verifyCodeToken) && StrUtil.isNotBlank(verifyCode)) {
-                if (validateCode(verifyCodeToken, verifyCode)) {
+                String truthCode = (String) request.getSession().getAttribute(verifyCodeToken);
+                if (validateCode(truthCode, verifyCode)) {
                     // 验证码正确
                     return this.getAuthenticationManager().authenticate(obtainAuthentication(request));
                 }
@@ -54,8 +55,8 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
         return this.getAuthenticationManager().authenticate(obtainAuthentication(request));
     }
 
-    private boolean validateCode(String verifyCodeToken, String verifyCode) {
-        return verifyCodeToken.equalsIgnoreCase(verifyCode);
+    private boolean validateCode(String truthCode, String verifyCode) {
+        return truthCode.equalsIgnoreCase(verifyCode);
     }
 
     @Override

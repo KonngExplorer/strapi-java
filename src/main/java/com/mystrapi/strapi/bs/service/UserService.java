@@ -7,9 +7,9 @@ import com.mystrapi.strapi.persistance.entity.strapi.*;
 import com.mystrapi.strapi.persistance.repository.strapi.*;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,8 +25,10 @@ import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
 @Data
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService implements UserDetailsManager {
 
     private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
@@ -47,20 +50,8 @@ public class UserService implements UserDetailsManager {
     private final GroupRepository groupRepository;
     private final UserGroupRepository userGroupRepository;
     private final GroupAuthorityRepository groupAuthorityRepository;
-
-    public UserService(UserRepository userRepository,
-                       AuthorityRepository authorityRepository,
-                       UserAuthorityRepository userAuthorityRepository,
-                       GroupRepository groupRepository,
-                       UserGroupRepository userGroupRepository,
-                       GroupAuthorityRepository groupAuthorityRepository) {
-        this.userRepository = userRepository;
-        this.authorityRepository = authorityRepository;
-        this.userAuthorityRepository = userAuthorityRepository;
-        this.groupRepository = groupRepository;
-        this.userGroupRepository = userGroupRepository;
-        this.groupAuthorityRepository = groupAuthorityRepository;
-    }
+    private final MenuRepository menuRepository;
+    private final AuthorityMenuRepository authorityMenuRepository;
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
@@ -74,8 +65,7 @@ public class UserService implements UserDetailsManager {
                 .map(AuthorityBO::getAuthority)
                 .toList();
         List<Authority> authorities = Stream.of(uAuthorities, gAuthorities)
-                .flatMap(Collection::stream).unordered().distinct().collect(Collectors.toList());
-        authorityRepository.saveAll(authorities);
+                .flatMap(Collection::stream).unordered().distinct().toList();
 
         List<UserAuthority> userAuthorities = authorities.stream().map(authority -> {
             long authorityId = authority.getId();
@@ -84,24 +74,11 @@ public class UserService implements UserDetailsManager {
         userAuthorityRepository.saveAll(userAuthorities);
 
         List<Group> groups = userBO.getGroupBOList().stream().map(GroupBO::getGroup).toList();
-        groupRepository.saveAll(groups);
-
         List<UserGroup> userGroups = groups.stream()
                 .map(group -> UserGroup.builder().groupId(group.getId()).userId(userBO.getUser().getId()).build())
                 .toList();
         userGroupRepository.saveAll(userGroups);
 
-        List<GroupAuthority> allGroupAuthorities = new ArrayList<>();
-        for (Group group : groups) {
-            List<GroupAuthority> groupAuthorities = authorities.stream()
-                    .map(authority -> GroupAuthority.builder()
-                            .authorityId(authority.getId())
-                            .groupId(group.getId())
-                            .build())
-                    .toList();
-            allGroupAuthorities.addAll(groupAuthorities);
-        }
-        groupAuthorityRepository.saveAll(allGroupAuthorities);
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -179,18 +156,22 @@ public class UserService implements UserDetailsManager {
         User user = userRepository.findByUsername(username);
         List<UserAuthority> userAuthorities = userAuthorityRepository.findUserAuthoritiesByUserId(user.getId());
         List<Authority> uAuthorities = authorityRepository.findAuthoritiesByIdIn(userAuthorities.stream().map(UserAuthority::getAuthorityId).toList());
+        List<AuthorityMenu> authorityMenus = authorityMenuRepository.findAuthorityMenusByAuthorityIdIn(uAuthorities.stream().map(Authority::getId).toList());
+        List<Menu> menus = menuRepository.findAllById(authorityMenus.stream().map(AuthorityMenu::getMenuId).toList());
         List<UserGroup> userGroups = userGroupRepository.findUserGroupByUserId(user.getId());
         List<Group> groups = groupRepository.findGroupsByIdIn(userGroups.stream().map(UserGroup::getGroupId).toList());
         List<GroupAuthority> groupAuthorities = groupAuthorityRepository.findGroupAuthoritiesByGroupIdIn(groups.stream().map(Group::getId).toList());
         List<Authority> gAuthorities = authorityRepository.findAuthoritiesByIdIn(groupAuthorities.stream().map(GroupAuthority::getAuthorityId).toList());
+        List<AuthorityMenu> gAuthorityMenus = authorityMenuRepository.findAuthorityMenusByAuthorityIdIn(uAuthorities.stream().map(Authority::getId).toList());
+        List<Menu> gMenus = menuRepository.findAllById(gAuthorityMenus.stream().map(AuthorityMenu::getMenuId).toList());
 
         UserBO userBO = UserBO.builder()
                 .user(user)
                 .groupBOList(groups.stream().map(group -> GroupBO.builder()
                         .group(group)
-                        .authorityBOList(gAuthorities.stream().map(AuthorityBO::new).toList())
+                        .authorityBOList(gAuthorities.stream().map(authority -> AuthorityBO.builder().authority(authority).menuList(gMenus).build()).toList())
                         .build()).toList())
-                .authorityBOList(uAuthorities.stream().map(AuthorityBO::new).toList())
+                .authorityBOList(uAuthorities.stream().map(authority -> AuthorityBO.builder().authority(authority).menuList(menus).build()).toList())
                 .build();
         userBO.getGroupBOList().forEach(groupBO -> groupBO.setUserBOList(Collections.singletonList(userBO)));
         return userBO;
@@ -200,15 +181,32 @@ public class UserService implements UserDetailsManager {
     public void initSomeUsers() {
         PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
         User user = User.builder().id(1L).username("admin").password("123456").enabled(true).build();
-        Authority authority4u = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
-        Authority authority4g = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
-        AuthorityBO userAuthorityBO = AuthorityBO.builder().authority(authority4u).build();
-        AuthorityBO groupAuthorityBO = AuthorityBO.builder().authority(authority4g).build();
+        Authority authority = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
+        AuthorityBO userAuthorityBO = AuthorityBO.builder().authority(authority).build();
+        AuthorityBO groupAuthorityBO = AuthorityBO.builder().authority(authority).build();
+        authorityRepository.save(authority);
+
         Group group = Group.builder().id(1L).group("测试部门1").build();
         GroupBO groupBO = GroupBO.builder()
                 .group(group)
                 .userBOList(new ArrayList<>())
                 .authorityBOList(Collections.singletonList(groupAuthorityBO)).build();
+        groupRepository.save(group);
+
+        List<GroupAuthority> groupAuthorities = Stream.of(authority)
+                .map(authority1 -> GroupAuthority.builder()
+                        .authorityId(authority1.getId())
+                        .groupId(group.getId())
+                        .build())
+                .toList();
+        List<GroupAuthority> allGroupAuthorities = new ArrayList<>(groupAuthorities);
+        groupAuthorityRepository.saveAll(allGroupAuthorities);
+
+        Menu menu = Menu.builder().name("用户信息").path("/user/userInfo").build();
+        menuRepository.save(menu);
+        AuthorityMenu authorityMenu = AuthorityMenu.builder().authorityId(authority.getId()).menuId(menu.getId()).build();
+        authorityMenuRepository.save(authorityMenu);
+
         UserBO userBO = UserBO.builder()
                 .user(user)
                 .authorityBOList(List.of(userAuthorityBO))

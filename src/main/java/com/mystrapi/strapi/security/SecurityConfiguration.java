@@ -45,14 +45,46 @@ public class SecurityConfiguration {
 
     @Value("${strapi.login.verifyCodeRequire:false}")
     private Boolean verifyCodeRequire;
-    private final ObjectMapper objectMapper;
-
-    public SecurityConfiguration(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
 
     @Bean
-    public SecurityFilterChain filterChain(@NotNull HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(@NotNull HttpSecurity http, ObjectMapper objectMapper, StrapiAuthorizationManager strapiAuthorizationManager) throws Exception {
+        StrapiAuthenticationFilter strapiAuthenticationFilter = getStrapiAuthenticationFilter(objectMapper);
+        SecurityFilterChain securityFilterChain = http.csrf().disable().cors().disable().authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
+                        authorizationManagerRequestMatcherRegistry.requestMatchers("/**").access(strapiAuthorizationManager))
+                .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
+                    // 已登录但是无权限
+                    httpSecurityExceptionHandlingConfigurer.accessDeniedHandler((request, response, accessDeniedException) -> {
+                        SecurityConfiguration.this.setAjaxResponse(response);
+                        ViewResult<LoginView> viewViewResult;
+                        log.info("[没有权限]", accessDeniedException);
+                        viewViewResult = ViewResult.failure("[没有权限] " + accessDeniedException.getMessage(), null);
+                        PrintWriter printWriter = response.getWriter();
+                        printWriter.write(objectMapper.writeValueAsString(viewViewResult));
+                        printWriter.flush();
+                        printWriter.close();
+                    });
+                })
+                .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
+                    // 未登录没权限
+                    httpSecurityExceptionHandlingConfigurer.authenticationEntryPoint((request, response, authException) -> {
+                        SecurityConfiguration.this.setAjaxResponse(response);
+                        ViewResult<LoginView> viewViewResult;
+                        log.warn("[未登录] {}", authException.getMessage());
+                        viewViewResult = ViewResult.failure("[未登录] " + authException.getMessage(), null);
+                        PrintWriter printWriter = response.getWriter();
+                        printWriter.write(objectMapper.writeValueAsString(viewViewResult));
+                        printWriter.flush();
+                        printWriter.close();
+                    });
+                })
+                // 替换UsernamePasswordAuthenticationFilter
+                .addFilterBefore(strapiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
+        strapiAuthenticationFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
+        return securityFilterChain;
+    }
+
+    @NotNull
+    private StrapiAuthenticationFilter getStrapiAuthenticationFilter(ObjectMapper objectMapper) {
         StrapiAuthenticationFilter strapiAuthenticationFilter = new StrapiAuthenticationFilter(verifyCodeRequire, objectMapper);
         strapiAuthenticationFilter.setFilterProcessesUrl("/login/doLogin");
         strapiAuthenticationFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
@@ -85,49 +117,7 @@ public class SecurityConfiguration {
         });
         // 使用session方式存储context
         strapiAuthenticationFilter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
-        SecurityFilterChain securityFilterChain = http
-                .csrf().disable()
-                .cors().disable()
-                .authorizeHttpRequests()
-                .requestMatchers("/**").authenticated()
-                .and()
-                .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
-                    // 已登录但是无权限
-                    httpSecurityExceptionHandlingConfigurer.accessDeniedHandler(new AccessDeniedHandler() {
-                        @Override
-                        public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
-                            SecurityConfiguration.this.setAjaxResponse(response);
-                            ViewResult<LoginView> viewViewResult;
-                            log.info("[没有权限]", accessDeniedException);
-                            viewViewResult = ViewResult.failure("[没有权限] " + accessDeniedException.getMessage(), null);
-                            PrintWriter printWriter = response.getWriter();
-                            printWriter.write(objectMapper.writeValueAsString(viewViewResult));
-                            printWriter.flush();
-                            printWriter.close();
-                        }
-                    });
-                })
-                .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
-                    // 未登录没权限
-                    httpSecurityExceptionHandlingConfigurer.authenticationEntryPoint(new AuthenticationEntryPoint() {
-                        @Override
-                        public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-                            SecurityConfiguration.this.setAjaxResponse(response);
-                            ViewResult<LoginView> viewViewResult;
-                            log.warn("[未登录] {}", authException.getMessage());
-                            viewViewResult = ViewResult.failure("[未登录] " + authException.getMessage(), null);
-                            PrintWriter printWriter = response.getWriter();
-                            printWriter.write(objectMapper.writeValueAsString(viewViewResult));
-                            printWriter.flush();
-                            printWriter.close();
-                        }
-                    });
-                })
-                // 替换UsernamePasswordAuthenticationFilter
-                .addFilterBefore(strapiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
-        strapiAuthenticationFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
-        return securityFilterChain;
+        return strapiAuthenticationFilter;
     }
 
     private void setAjaxResponse(HttpServletResponse response) {
