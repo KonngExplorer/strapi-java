@@ -1,37 +1,26 @@
 package com.mystrapi.strapi.security;
 
-import cn.hutool.core.lang.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mystrapi.strapi.bs.bo.AuthorityBO;
-import com.mystrapi.strapi.bs.bo.GroupBO;
-import com.mystrapi.strapi.bs.bo.UserBO;
-import com.mystrapi.strapi.persistance.entity.strapi.Authority;
-import com.mystrapi.strapi.persistance.entity.strapi.Group;
+import com.mystrapi.strapi.util.StrapiUtil;
 import com.mystrapi.strapi.web.view.ViewResult;
 import com.mystrapi.strapi.web.view.login.LoginView;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.ForwardAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.session.SessionManagementFilter;
 
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * 安全配置
@@ -39,7 +28,7 @@ import java.util.List;
  * @author tangqiang
  */
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity(debug = true)
 @Slf4j
 public class SecurityConfiguration {
 
@@ -47,14 +36,67 @@ public class SecurityConfiguration {
     private Boolean verifyCodeRequire;
 
     @Bean
+    HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(@NotNull HttpSecurity http, ObjectMapper objectMapper, StrapiAuthorizationManager strapiAuthorizationManager) throws Exception {
-        StrapiAuthenticationFilter strapiAuthenticationFilter = getStrapiAuthenticationFilter(objectMapper);
-        SecurityFilterChain securityFilterChain = http.csrf().disable().cors().disable().authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
-                        authorizationManagerRequestMatcherRegistry.requestMatchers("/**").access(strapiAuthorizationManager))
+        SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+        StrapiAuthenticationFilter strapiAuthenticationFilter = getStrapiAuthenticationFilter(objectMapper, securityContextRepository);
+        SecurityFilterChain securityFilterChain = http
+                .csrf().disable()
+                .cors().disable()
+                .anonymous().disable()
+                .logout(logout -> logout
+                        .deleteCookies("JSESSIONID")
+                )
+                // 替换UsernamePasswordAuthenticationFilter
+                .addFilterBefore(strapiAuthenticationFilter, SessionManagementFilter.class)
+                .sessionManagement(configurer -> {
+                    configurer.enableSessionUrlRewriting(true)
+                            .sessionConcurrency(concurrencyControlConfigurer -> {
+                                concurrencyControlConfigurer
+                                        // 单个账号最大支持多少设备同时在线
+                                        .maximumSessions(1)
+                                        // true：其他设备中已登录的话，本设备登录不了；false：其他设备已登录，本设备登录会挤掉其他设备登录用户状态
+                                        .maxSessionsPreventsLogin(false)
+                                        .expiredSessionStrategy(event -> {
+                                            StrapiUtil.setAjaxResponse(event.getResponse());
+                                            ViewResult<LoginView> viewViewResult;
+                                            viewViewResult = ViewResult.failure("[已在其他设备中登录！请重新登录]", null);
+                                            PrintWriter printWriter = event.getResponse().getWriter();
+                                            printWriter.write(objectMapper.writeValueAsString(viewViewResult));
+                                            printWriter.flush();
+                                            printWriter.close();
+                                        });
+                            })
+                            .sessionAuthenticationFailureHandler((request, response, exception) -> {
+                                StrapiUtil.setAjaxResponse(response);
+                                ViewResult<LoginView> viewViewResult;
+                                log.warn("[登录失败] ", exception);
+
+                                String message = exception.getMessage();
+                                if (exception instanceof SessionAuthenticationException) {
+                                    message = "已在其他设备中登录";
+                                }
+
+                                viewViewResult = ViewResult.failure("[登录失败] " + message, null);
+                                PrintWriter printWriter = response.getWriter();
+                                printWriter.write(objectMapper.writeValueAsString(viewViewResult));
+                                printWriter.flush();
+                                printWriter.close();
+                            });
+                })
+                .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
+                        authorizationManagerRequestMatcherRegistry
+                                .requestMatchers("/login/doLogin").permitAll()
+                                .requestMatchers("/code/img").permitAll()
+                                .requestMatchers("/**").access(strapiAuthorizationManager))
                 .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
                     // 已登录但是无权限
                     httpSecurityExceptionHandlingConfigurer.accessDeniedHandler((request, response, accessDeniedException) -> {
-                        SecurityConfiguration.this.setAjaxResponse(response);
+                        StrapiUtil.setAjaxResponse(response);
                         ViewResult<LoginView> viewViewResult;
                         log.info("[没有权限]", accessDeniedException);
                         viewViewResult = ViewResult.failure("[没有权限] " + accessDeniedException.getMessage(), null);
@@ -65,11 +107,11 @@ public class SecurityConfiguration {
                     });
                 })
                 .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
-                    // 未登录没权限
+                    // 未登录导致没权限
                     httpSecurityExceptionHandlingConfigurer.authenticationEntryPoint((request, response, authException) -> {
-                        SecurityConfiguration.this.setAjaxResponse(response);
+                        StrapiUtil.setAjaxResponse(response);
                         ViewResult<LoginView> viewViewResult;
-                        log.warn("[未登录] {}", authException.getMessage());
+                        log.warn("[未登录] ", authException);
                         viewViewResult = ViewResult.failure("[未登录] " + authException.getMessage(), null);
                         PrintWriter printWriter = response.getWriter();
                         printWriter.write(objectMapper.writeValueAsString(viewViewResult));
@@ -77,32 +119,19 @@ public class SecurityConfiguration {
                         printWriter.close();
                     });
                 })
-                // 替换UsernamePasswordAuthenticationFilter
-                .addFilterBefore(strapiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
+                .build();
         strapiAuthenticationFilter.setAuthenticationManager(http.getSharedObject(AuthenticationManager.class));
         return securityFilterChain;
     }
 
     @NotNull
-    private StrapiAuthenticationFilter getStrapiAuthenticationFilter(ObjectMapper objectMapper) {
+    private StrapiAuthenticationFilter getStrapiAuthenticationFilter(ObjectMapper objectMapper, SecurityContextRepository securityContextRepository) {
         StrapiAuthenticationFilter strapiAuthenticationFilter = new StrapiAuthenticationFilter(verifyCodeRequire, objectMapper);
         strapiAuthenticationFilter.setFilterProcessesUrl("/login/doLogin");
-        strapiAuthenticationFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
-            setAjaxResponse(response);
-            PrintWriter printWriter = response.getWriter();
-            List<String> authorities = ((UserBO) authentication.getPrincipal()).getAuthorityBOList().stream().map(AuthorityBO::getAuthority).map(Authority::getAuth).toList();
-            List<Group> groups = ((UserBO) authentication.getPrincipal()).getGroupBOList().stream().map(GroupBO::getGroup).toList();
-            String token = UUID.randomUUID(true).toString(true);
-            ((UserBO) authentication.getPrincipal()).setToken(token);
-            LoginView loginView = LoginView.builder().token(token).username(authentication.getName()).authorities(authorities).groupList(groups).build();
-            ViewResult<LoginView> viewViewResult = ViewResult.success(loginView);
-            printWriter.write(objectMapper.writeValueAsString(viewViewResult));
-            printWriter.flush();
-            printWriter.close();
-
-        });
+        // ForwardAuthenticationSuccessHandler
+        strapiAuthenticationFilter.setAuthenticationSuccessHandler(new ForwardAuthenticationSuccessHandler("/user/userInfo"));
         strapiAuthenticationFilter.setAuthenticationFailureHandler((request, response, exception) -> {
-            setAjaxResponse(response);
+            StrapiUtil.setAjaxResponse(response);
             ViewResult<LoginView> viewViewResult;
             if (exception instanceof BadVerifyCodeAuthenticationException) {
                 viewViewResult = ViewResult.failure("验证码错误", null);
@@ -116,13 +145,13 @@ public class SecurityConfiguration {
             printWriter.close();
         });
         // 使用session方式存储context
-        strapiAuthenticationFilter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
+        strapiAuthenticationFilter.setSecurityContextRepository(securityContextRepository);
+        strapiAuthenticationFilter.setContinueChainBeforeSuccessfulAuthentication(false);
         return strapiAuthenticationFilter;
     }
 
-    private void setAjaxResponse(HttpServletResponse response) {
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.setContentType("application/json;charset=utf-8");
+    private StrapiAuthenticationResponseFilter getStrapiAuthenticationResponseFilter(ObjectMapper objectMapper, SecurityContextRepository securityContextRepository) {
+        return new StrapiAuthenticationResponseFilter(objectMapper, securityContextRepository);
     }
 
 }

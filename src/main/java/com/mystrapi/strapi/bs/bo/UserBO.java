@@ -2,6 +2,7 @@ package com.mystrapi.strapi.bs.bo;
 
 import com.mystrapi.strapi.persistance.entity.strapi.User;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
  * @author tangqiang
  */
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserBO implements UserDetails {
 
     private User user;

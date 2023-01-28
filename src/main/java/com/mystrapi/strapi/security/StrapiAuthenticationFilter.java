@@ -4,12 +4,19 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mystrapi.strapi.web.form.LoginForm;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -26,6 +33,12 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
     private final ObjectMapper objectMapper;
     private final ThreadLocal<LoginForm> loginFormThreadLocal = new ThreadLocal<>();
 
+    private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
+            .getContextHolderStrategy();
+
+    private static final String CONTENT_TYPE = "content-type";
+    private static final String CONTENT_TYPE_JSON = "application/json";
+
     public StrapiAuthenticationFilter(Boolean verifyCodeRequire, ObjectMapper objectMapper) {
         this.verifyCodeRequire = verifyCodeRequire;
         this.objectMapper = objectMapper;
@@ -34,7 +47,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         // 验证是否ajax请求
-        if (request.getHeader("content-type") == null || !"application/json".equalsIgnoreCase(request.getHeader("content-type"))) {
+        if (request.getHeader(CONTENT_TYPE) == null || !CONTENT_TYPE_JSON.equalsIgnoreCase(request.getHeader(CONTENT_TYPE))) {
             throw new AuthenticationServiceException("非ajax请求");
         }
         // 校验验证码
@@ -53,6 +66,25 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
             }
         }
         return this.getAuthenticationManager().authenticate(obtainAuthentication(request));
+    }
+
+    /**
+     * 必须重写该方法，否则并发session控制不生效 SessionManagementFilter#doFilter(HttpServletRequest, HttpServletResponse, FilterChain)
+     */
+    @Override
+    public void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+                                            Authentication authResult) throws IOException, ServletException {
+        SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
+        context.setAuthentication(authResult);
+        this.securityContextHolderStrategy.setContext(context);
+        if (this.logger.isDebugEnabled()) {
+            this.logger.debug(LogMessage.format("Set SecurityContextHolder to %s", authResult));
+        }
+        super.getRememberMeServices().loginSuccess(request, response, authResult);
+        if (this.eventPublisher != null) {
+            this.eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(authResult, this.getClass()));
+        }
+        this.getSuccessHandler().onAuthenticationSuccess(request, response, authResult);
     }
 
     private boolean validateCode(String truthCode, String verifyCode) {

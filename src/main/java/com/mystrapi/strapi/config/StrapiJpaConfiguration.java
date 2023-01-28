@@ -16,7 +16,6 @@ import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.config.BootstrapMode;
@@ -28,8 +27,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
-import java.time.OffsetDateTime;
-import java.util.Optional;
 
 /**
  * 支持多数据源
@@ -97,10 +94,5 @@ public class StrapiJpaConfiguration {
         tx.setEntityManagerFactory(localContainerEntityManagerFactoryBean.getObject());
         return tx;
     }
-
-//    @Bean(name = "strapiDateTimeProvider")
-//    public DateTimeProvider dateTimeProvider() {
-//        return () -> Optional.of(OffsetDateTime.now());
-//    }
 
 }

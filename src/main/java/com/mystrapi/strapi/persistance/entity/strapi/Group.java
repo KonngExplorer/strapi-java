@@ -21,7 +21,7 @@ public class Group extends BaseEntity{
     @GenericGenerator(name = "strapi_group_pk", strategy = "identity")
     private Long id;
 
-    @Column(name = "user_group", unique = true, nullable = false, length = 255)
+    @Column(name = "user_group", unique = true, nullable = false)
     private String group;
 
 }

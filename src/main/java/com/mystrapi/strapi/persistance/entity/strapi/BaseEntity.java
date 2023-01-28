@@ -1,6 +1,7 @@
 package com.mystrapi.strapi.persistance.entity.strapi;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -32,4 +33,8 @@ public class BaseEntity {
     @CreatedBy
     @Column(name = "create_by")
     private String createBy;
+
+    @ColumnDefault("0")
+    @Column(name = "deleted", nullable = false)
+    private int deleted;
 }

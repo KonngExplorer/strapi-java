@@ -1,4 +1,4 @@
-package com.mystrapi.strapi;
+package com.mystrapi.strapi.context;
 
 import com.mystrapi.strapi.bs.bo.AuthorityBO;
 import com.mystrapi.strapi.bs.bo.GroupBO;
@@ -7,8 +7,9 @@ import com.mystrapi.strapi.bs.service.UserService;
 import com.mystrapi.strapi.persistance.entity.strapi.*;
 import com.mystrapi.strapi.persistance.repository.strapi.*;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -17,9 +18,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-@SpringBootTest
+/**
+ * @author tangqiang
+ */
 @RequiredArgsConstructor
-class StrapiJavaApplicationTests {
+public class StrapiApplicationContextAware implements ApplicationContextAware {
 
     private final UserService userService;
     private final AuthorityRepository authorityRepository;
@@ -28,12 +31,8 @@ class StrapiJavaApplicationTests {
     private final GroupAuthorityRepository groupAuthorityRepository;
     private final AuthorityMenuRepository authorityMenuRepository;
 
-    @Test
-    void contextLoads() {
-    }
-
-    @Test
-    void initSomeUser() {
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
         User user = User.builder().id(1L).username("admin").password("123456").enabled(true).build();
         Authority authority = Authority.builder().id(1L).auth("ROLE_ADMIN").build();
@@ -70,5 +69,4 @@ class StrapiJavaApplicationTests {
         groupBO.setUserBOList(Collections.singletonList(userBO));
         userService.createUser(userBO);
     }
-
 }

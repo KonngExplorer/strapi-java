@@ -1,5 +1,7 @@
 package com.mystrapi.strapi.bs.service;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.mystrapi.strapi.bs.bo.AuthorityBO;
 import com.mystrapi.strapi.bs.bo.GroupBO;
 import com.mystrapi.strapi.bs.bo.UserBO;
@@ -13,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,7 +45,7 @@ public class UserService implements UserDetailsManager {
 
     private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
             .getContextHolderStrategy();
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationConfiguration authenticationConfiguration;
 
     private final UserRepository userRepository;
     private final AuthorityRepository authorityRepository;
@@ -71,14 +74,17 @@ public class UserService implements UserDetailsManager {
             long authorityId = authority.getId();
             return UserAuthority.builder().userId(userBO.getUser().getId()).authorityId(authorityId).build();
         }).toList();
-        userAuthorityRepository.saveAll(userAuthorities);
+        if (CollUtil.isNotEmpty(userAuthorities)) {
+            userAuthorityRepository.saveAll(userAuthorities);
+        }
 
         List<Group> groups = userBO.getGroupBOList().stream().map(GroupBO::getGroup).toList();
         List<UserGroup> userGroups = groups.stream()
                 .map(group -> UserGroup.builder().groupId(group.getId()).userId(userBO.getUser().getId()).build())
                 .toList();
-        userGroupRepository.saveAll(userGroups);
-
+        if (CollUtil.isNotEmpty(userGroups)) {
+            userGroupRepository.saveAll(userGroups);
+        }
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -112,6 +118,12 @@ public class UserService implements UserDetailsManager {
         // TODO 从缓存中去除
     }
 
+    /**
+     * 修改密码后需要重新鉴权
+     *
+     * @param oldPassword current password (for re-authentication if required)
+     * @param newPassword the password to change to
+     */
     @Override
     public void changePassword(String oldPassword, String newPassword) {
         Authentication currentUser = securityContextHolderStrategy.getContext().getAuthentication();
@@ -120,22 +132,28 @@ public class UserService implements UserDetailsManager {
                     "Can't change password as no Authentication object found in context " + "for current user.");
         }
         String username = currentUser.getName();
-        if (this.authenticationManager != null) {
-            log.debug("Reauthenticating user '{}' for password change request.", username);
-            this.authenticationManager
-                    .authenticate(UsernamePasswordAuthenticationToken.unauthenticated(username, oldPassword));
-        } else {
-            log.debug("No authentication manager set. Password won't be re-checked.");
+        try {
+            AuthenticationManager authenticationManager = authenticationConfiguration.getAuthenticationManager();
+            if (authenticationManager != null) {
+                log.debug("ReAuthenticating user '{}' for password change request.", username);
+                authenticationManager
+                        .authenticate(UsernamePasswordAuthenticationToken.unauthenticated(username, oldPassword));
+            } else {
+                log.debug("No authentication manager set. Password won't be re-checked.");
+            }
+            log.debug("Changing password for user '" + username + "'");
+            User user = userRepository.findByUsername(username);
+            user.setPassword(newPassword);
+            userRepository.save(user);
+            UserBO userDetails = (UserBO) loadUserByUsername(user.getUsername());
+            Authentication newAuthentication = createNewAuthentication(currentUser, userDetails);
+            SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
+            context.setAuthentication(newAuthentication);
+            this.securityContextHolderStrategy.setContext(context);
+        } catch (Exception e) {
+            log.error(e.toString());
+            throw new RuntimeException(e);
         }
-        log.debug("Changing password for user '" + username + "'");
-        User user = userRepository.findByUsername(username);
-        user.setPassword(newPassword);
-        User newUser = userRepository.save(user);
-        UserBO userDetails = UserBO.builder().user(newUser).build();
-        Authentication newAuthentication = createNewAuthentication(currentUser, userDetails);
-        SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
-        context.setAuthentication(newAuthentication);
-        this.securityContextHolderStrategy.setContext(context);
     }
 
     protected Authentication createNewAuthentication(@NotNull Authentication currentAuth, UserBO userDetails) {
@@ -154,13 +172,20 @@ public class UserService implements UserDetailsManager {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username);
+
+        if (ObjectUtil.isNull(user)) {
+            throw new UsernameNotFoundException("用户名 [{}] 不存在");
+        }
+
         List<UserAuthority> userAuthorities = userAuthorityRepository.findUserAuthoritiesByUserId(user.getId());
         List<Authority> uAuthorities = authorityRepository.findAuthoritiesByIdIn(userAuthorities.stream().map(UserAuthority::getAuthorityId).toList());
+
         List<AuthorityMenu> authorityMenus = authorityMenuRepository.findAuthorityMenusByAuthorityIdIn(uAuthorities.stream().map(Authority::getId).toList());
         List<Menu> menus = menuRepository.findAllById(authorityMenus.stream().map(AuthorityMenu::getMenuId).toList());
         List<UserGroup> userGroups = userGroupRepository.findUserGroupByUserId(user.getId());
         List<Group> groups = groupRepository.findGroupsByIdIn(userGroups.stream().map(UserGroup::getGroupId).toList());
         List<GroupAuthority> groupAuthorities = groupAuthorityRepository.findGroupAuthoritiesByGroupIdIn(groups.stream().map(Group::getId).toList());
+
         List<Authority> gAuthorities = authorityRepository.findAuthoritiesByIdIn(groupAuthorities.stream().map(GroupAuthority::getAuthorityId).toList());
         List<AuthorityMenu> gAuthorityMenus = authorityMenuRepository.findAuthorityMenusByAuthorityIdIn(uAuthorities.stream().map(Authority::getId).toList());
         List<Menu> gMenus = menuRepository.findAllById(gAuthorityMenus.stream().map(AuthorityMenu::getMenuId).toList());

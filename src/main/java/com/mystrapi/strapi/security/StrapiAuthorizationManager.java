@@ -14,6 +14,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,7 +50,7 @@ public class StrapiAuthorizationManager implements AuthorizationManager<RequestA
         }
 
         String requestUri = requestAuthorizationContext.getRequest().getRequestURI();
-        log.debug("requestUri --> {}", requestUri);
+        log.info("requestUri --> {}", requestUri);
 
         Optional<MenuBo> optionalMenuBo = menuService.findMenuBoListByPath(requestUri);
 
@@ -59,8 +60,8 @@ public class StrapiAuthorizationManager implements AuthorizationManager<RequestA
             Collection<? extends GrantedAuthority> grantedAuthorities = userBO.getAuthorities();
             if (grantedAuthorities != null && grantedAuthorities.size() > 0) {
                 boolean contains = CollUtil.containsAny(
-                        menuBo.getAuthorities().stream().map(Authority::getAuth).toList(),
-                        userBO.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
+                        menuBo.getAuthorities() != null ? menuBo.getAuthorities().stream().map(Authority::getAuth).toList() : new ArrayList<>(),
+                        userBO.getAuthorities() != null ? userBO.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList() : new ArrayList<>());
                 authorizationDecision.set(new AuthorizationDecision(contains));
             } else {
                 authorizationDecision.set(new AuthorizationDecision(false));

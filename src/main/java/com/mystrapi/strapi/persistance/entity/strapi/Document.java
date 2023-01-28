@@ -20,8 +20,8 @@ public class Document extends BaseEntity {
 
     @Id
     @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_user_pk")
-    @GenericGenerator(name = "strapi_user_pk", strategy = "identity")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_document_pk")
+    @GenericGenerator(name = "strapi_document_pk", strategy = "identity")
     private Long id;
 
     @Column(name = "title")
@@ -30,5 +30,13 @@ public class Document extends BaseEntity {
     @Column(name = "content")
     @JdbcType(LongVarcharJdbcType.class)
     private String content;
+
+    @Column(name = "html_content")
+    @JdbcType(LongVarcharJdbcType.class)
+    private String htmlContent;
+
+    @Column(name = "json_content")
+    @JdbcType(LongVarcharJdbcType.class)
+    private String jsonContent;
 
 }
