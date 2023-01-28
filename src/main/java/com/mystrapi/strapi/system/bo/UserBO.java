@@ -1,4 +1,4 @@
-package com.mystrapi.strapi.bs.bo;
+package com.mystrapi.strapi.system.bo;
 
 import com.mystrapi.strapi.persistance.entity.strapi.User;
 import lombok.Data;
@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

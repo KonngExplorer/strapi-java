@@ -1,10 +1,10 @@
-package com.mystrapi.strapi.bs.service;
+package com.mystrapi.strapi.system.service;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
-import com.mystrapi.strapi.bs.bo.AuthorityBO;
-import com.mystrapi.strapi.bs.bo.GroupBO;
-import com.mystrapi.strapi.bs.bo.UserBO;
+import com.mystrapi.strapi.system.bo.AuthorityBO;
+import com.mystrapi.strapi.system.bo.GroupBO;
+import com.mystrapi.strapi.system.bo.UserBO;
 import com.mystrapi.strapi.persistance.entity.strapi.*;
 import com.mystrapi.strapi.persistance.repository.strapi.*;
 import jakarta.annotation.PostConstruct;

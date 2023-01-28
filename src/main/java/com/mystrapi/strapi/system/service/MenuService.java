@@ -1,7 +1,7 @@
-package com.mystrapi.strapi.bs.service;
+package com.mystrapi.strapi.system.service;
 
 import cn.hutool.core.util.StrUtil;
-import com.mystrapi.strapi.bs.bo.MenuBo;
+import com.mystrapi.strapi.system.bo.MenuBo;
 import com.mystrapi.strapi.persistance.entity.strapi.Authority;
 import com.mystrapi.strapi.persistance.entity.strapi.AuthorityMenu;
 import com.mystrapi.strapi.persistance.entity.strapi.Menu;

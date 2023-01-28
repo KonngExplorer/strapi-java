@@ -1,9 +1,9 @@
 package com.mystrapi.strapi.security;
 
 import cn.hutool.core.collection.CollUtil;
-import com.mystrapi.strapi.bs.bo.MenuBo;
-import com.mystrapi.strapi.bs.bo.UserBO;
-import com.mystrapi.strapi.bs.service.MenuService;
+import com.mystrapi.strapi.system.bo.MenuBo;
+import com.mystrapi.strapi.system.bo.UserBO;
+import com.mystrapi.strapi.system.service.MenuService;
 import com.mystrapi.strapi.persistance.entity.strapi.Authority;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

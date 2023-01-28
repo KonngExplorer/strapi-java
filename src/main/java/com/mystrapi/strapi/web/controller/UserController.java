@@ -1,7 +1,7 @@
 package com.mystrapi.strapi.web.controller;
 
-import com.mystrapi.strapi.bs.bo.UserBO;
-import com.mystrapi.strapi.bs.service.UserService;
+import com.mystrapi.strapi.system.bo.UserBO;
+import com.mystrapi.strapi.system.service.UserService;
 import com.mystrapi.strapi.web.view.ViewResult;
 import com.mystrapi.strapi.web.view.user.UserInfoView;
 import lombok.AllArgsConstructor;

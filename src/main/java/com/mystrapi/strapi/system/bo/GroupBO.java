@@ -1,4 +1,4 @@
-package com.mystrapi.strapi.bs.bo;
+package com.mystrapi.strapi.system.bo;
 
 import com.mystrapi.strapi.persistance.entity.strapi.Group;
 import lombok.AllArgsConstructor;

@@ -2,9 +2,9 @@ package com.mystrapi.strapi.security;
 
 import cn.hutool.core.lang.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mystrapi.strapi.bs.bo.AuthorityBO;
-import com.mystrapi.strapi.bs.bo.GroupBO;
-import com.mystrapi.strapi.bs.bo.UserBO;
+import com.mystrapi.strapi.system.bo.AuthorityBO;
+import com.mystrapi.strapi.system.bo.GroupBO;
+import com.mystrapi.strapi.system.bo.UserBO;
 import com.mystrapi.strapi.persistance.entity.strapi.Authority;
 import com.mystrapi.strapi.persistance.entity.strapi.Group;
 import com.mystrapi.strapi.util.StrapiUtil;
