@@ -15,17 +15,17 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "strapi_channel")
-public class Channel extends BaseEntity {
+@Table(name = "strapi_site")
+public class Site extends BaseEntity {
 
     @Id
     @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_channel_pk")
-    @GenericGenerator(name = "strapi_channel_pk", strategy = "identity")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "strapi_site_pk")
+    @GenericGenerator(name = "strapi_site_pk", strategy = "identity")
     private Long id;
 
-    @Column(name = "channel_name", nullable = false)
-    private String channelName;
+    @Column(name = "site_name", nullable = false)
+    private String siteName;
 
     @Column(name = "cn_name", nullable = false)
     private String zhName;
@@ -33,9 +33,7 @@ public class Channel extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    private Long siteId;
-
     @OneToMany
-    @JoinColumn(name = "channel_id", referencedColumnName = "id")
-    private List<Document> documents;
+    @JoinColumn(name = "site_id", referencedColumnName = "id", nullable = false)
+    private List<Channel> channels;
 }

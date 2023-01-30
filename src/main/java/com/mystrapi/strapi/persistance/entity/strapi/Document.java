@@ -39,4 +39,7 @@ public class Document extends BaseEntity {
     @JdbcType(LongVarcharJdbcType.class)
     private String jsonContent;
 
+    @Column(name = "json_content")
+    private Long channelId;
+
 }
