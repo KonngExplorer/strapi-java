@@ -1,5 +1,6 @@
 package com.mystrapi.strapi.web.form;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -8,7 +9,9 @@ import lombok.Data;
 @Data
 public class LoginForm {
 
+    @NotNull(message = "{jakarta.validation.constraints.NotNull.message}")
     private String username;
+    @NotNull(message = "{jakarta.validation.constraints.NotNull.message}")
     private String password;
     private String verifyCodeToken;
     private String verifyCode;

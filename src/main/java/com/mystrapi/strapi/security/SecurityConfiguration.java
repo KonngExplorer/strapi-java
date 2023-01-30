@@ -19,6 +19,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.session.SessionManagementFilter;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.io.PrintWriter;
 
@@ -35,15 +36,24 @@ public class SecurityConfiguration {
     @Value("${strapi.login.verifyCodeRequire:false}")
     private Boolean verifyCodeRequire;
 
+    @Value("${strapi.user.info.url:/user/userInfo}")
+    private String userInfoUrl = "";
+    @Value("${strapi.login.doLogin.url:/login/doLogin}")
+    private String doLoginUrl = "";
+    @Value("${strapi.support.code.url:/code/img}")
+    private String codeImgUrl = "";
+
     @Bean
     HttpSessionEventPublisher httpSessionEventPublisher() {
         return new HttpSessionEventPublisher();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(@NotNull HttpSecurity http, ObjectMapper objectMapper, StrapiAuthorizationManager strapiAuthorizationManager) throws Exception {
+    public SecurityFilterChain filterChain(@NotNull HttpSecurity http, ObjectMapper objectMapper,
+                                           StrapiAuthorizationManager strapiAuthorizationManager,
+                                           LocalValidatorFactoryBean localValidatorFactoryBean) throws Exception {
         SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
-        StrapiAuthenticationFilter strapiAuthenticationFilter = getStrapiAuthenticationFilter(objectMapper, securityContextRepository);
+        StrapiAuthenticationFilter strapiAuthenticationFilter = getStrapiAuthenticationFilter(objectMapper, securityContextRepository, localValidatorFactoryBean);
         SecurityFilterChain securityFilterChain = http
                 .csrf().disable()
                 .cors().disable()
@@ -90,8 +100,8 @@ public class SecurityConfiguration {
                 })
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
                         authorizationManagerRequestMatcherRegistry
-                                .requestMatchers("/login/doLogin").permitAll()
-                                .requestMatchers("/code/img").permitAll()
+                                .requestMatchers(doLoginUrl).permitAll()
+                                .requestMatchers(codeImgUrl).permitAll()
                                 .requestMatchers("/**").access(strapiAuthorizationManager))
                 .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
                     // 已登录但是无权限
@@ -125,11 +135,11 @@ public class SecurityConfiguration {
     }
 
     @NotNull
-    private StrapiAuthenticationFilter getStrapiAuthenticationFilter(ObjectMapper objectMapper, SecurityContextRepository securityContextRepository) {
-        StrapiAuthenticationFilter strapiAuthenticationFilter = new StrapiAuthenticationFilter(verifyCodeRequire, objectMapper);
-        strapiAuthenticationFilter.setFilterProcessesUrl("/login/doLogin");
+    private StrapiAuthenticationFilter getStrapiAuthenticationFilter(ObjectMapper objectMapper, SecurityContextRepository securityContextRepository, LocalValidatorFactoryBean localValidatorFactoryBean) {
+        StrapiAuthenticationFilter strapiAuthenticationFilter = new StrapiAuthenticationFilter(verifyCodeRequire, objectMapper, localValidatorFactoryBean);
+        strapiAuthenticationFilter.setFilterProcessesUrl(doLoginUrl);
         // ForwardAuthenticationSuccessHandler
-        strapiAuthenticationFilter.setAuthenticationSuccessHandler(new ForwardAuthenticationSuccessHandler("/user/userInfo"));
+        strapiAuthenticationFilter.setAuthenticationSuccessHandler(new ForwardAuthenticationSuccessHandler(userInfoUrl));
         strapiAuthenticationFilter.setAuthenticationFailureHandler((request, response, exception) -> {
             StrapiUtil.setAjaxResponse(response);
             ViewResult<LoginView> viewViewResult;
@@ -148,10 +158,6 @@ public class SecurityConfiguration {
         strapiAuthenticationFilter.setSecurityContextRepository(securityContextRepository);
         strapiAuthenticationFilter.setContinueChainBeforeSuccessfulAuthentication(false);
         return strapiAuthenticationFilter;
-    }
-
-    private StrapiAuthenticationResponseFilter getStrapiAuthenticationResponseFilter(ObjectMapper objectMapper, SecurityContextRepository securityContextRepository) {
-        return new StrapiAuthenticationResponseFilter(objectMapper, securityContextRepository);
     }
 
 }

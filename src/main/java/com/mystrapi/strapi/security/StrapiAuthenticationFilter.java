@@ -8,8 +8,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolation;
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
@@ -18,9 +20,11 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Set;
 
 /**
  * 自定义认证逻辑
@@ -31,6 +35,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
     private final Boolean verifyCodeRequire;
     private final ObjectMapper objectMapper;
+    private final LocalValidatorFactoryBean localValidatorFactoryBean;
     private final ThreadLocal<LoginForm> loginFormThreadLocal = new ThreadLocal<>();
 
     private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
@@ -39,9 +44,10 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
     private static final String CONTENT_TYPE = "content-type";
     private static final String CONTENT_TYPE_JSON = "application/json";
 
-    public StrapiAuthenticationFilter(Boolean verifyCodeRequire, ObjectMapper objectMapper) {
+    public StrapiAuthenticationFilter(Boolean verifyCodeRequire, ObjectMapper objectMapper, LocalValidatorFactoryBean localValidatorFactoryBean) {
         this.verifyCodeRequire = verifyCodeRequire;
         this.objectMapper = objectMapper;
+        this.localValidatorFactoryBean = localValidatorFactoryBean;
     }
 
     @Override
@@ -73,7 +79,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
      */
     @Override
     public void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-                                            Authentication authResult) throws IOException, ServletException {
+                                         Authentication authResult) throws IOException, ServletException {
         SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
         context.setAuthentication(authResult);
         this.securityContextHolderStrategy.setContext(context);
@@ -115,6 +121,11 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
         }
         try (InputStream inputStream = request.getInputStream()) {
             LoginForm loginForm = objectMapper.readValue(inputStream, LoginForm.class);
+
+            Set<ConstraintViolation<LoginForm>> constraintViolations = localValidatorFactoryBean.getValidator().validate(loginForm);
+            if (constraintViolations.size() > 0) {
+                throw new BadCredentialsException(constraintViolations.iterator().next().getMessage());
+            }
             assert loginFormThreadLocal != null;
             loginFormThreadLocal.set(loginForm);
             return loginFormThreadLocal.get();
