@@ -121,7 +121,7 @@ public class StrapiAuthenticationFilter extends UsernamePasswordAuthenticationFi
         }
         try (InputStream inputStream = request.getInputStream()) {
             LoginForm loginForm = objectMapper.readValue(inputStream, LoginForm.class);
-
+            // 校验参数
             Set<ConstraintViolation<LoginForm>> constraintViolations = localValidatorFactoryBean.getValidator().validate(loginForm);
             if (constraintViolations.size() > 0) {
                 throw new BadCredentialsException(constraintViolations.iterator().next().getMessage());

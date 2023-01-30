@@ -28,6 +28,6 @@ public class Channel extends BaseEntity {
     @Column(name = "cn_name", nullable = false)
     private String zhName;
 
-    @Column(name = "abstact")
-    private String abstact;
+    @Column(name = "describe")
+    private String describe;
 }

@@ -1,5 +1,6 @@
 package com.mystrapi.strapi.web.controller;
 
+import com.mystrapi.strapi.persistance.entity.strapi.Menu;
 import com.mystrapi.strapi.system.bo.UserBO;
 import com.mystrapi.strapi.system.service.UserService;
 import com.mystrapi.strapi.web.view.ViewResult;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
+
 /**
  * @author tangqiang
  */
@@ -18,8 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/user")
 @AllArgsConstructor
 public class UserController {
-
-    private final UserService userService;
 
     @PostMapping("/userInfo")
     public ViewResult<UserInfoView> userInfo() {
@@ -31,6 +32,8 @@ public class UserController {
                     .username(userBO.getUsername())
                     .enabled(userBO.isEnabled())
                     .authorities(userBO.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
+                    .menus(userBO.getAuthorityBOList().stream().map(authorityBO -> authorityBO.getMenuList().stream()
+                            .map(Menu::getPath).toList()).flatMap(Collection::stream).toList())
                     .build();
             return ViewResult.success(userInfoView);
         }

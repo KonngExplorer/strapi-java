@@ -20,4 +20,6 @@ public class UserInfoView {
 
     private List<String> authorities;
 
+    private List<String> menus;
+
 }
