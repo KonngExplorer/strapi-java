@@ -1,5 +1,6 @@
 package com.mystrapi.strapi.persistance.entity.strapi;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -34,6 +35,7 @@ public class Site extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Channel> channels;
 }

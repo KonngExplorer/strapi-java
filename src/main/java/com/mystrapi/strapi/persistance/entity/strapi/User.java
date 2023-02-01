@@ -1,5 +1,7 @@
 package com.mystrapi.strapi.persistance.entity.strapi;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -34,11 +36,13 @@ public class User extends BaseEntity {
     @Column(name = "enabled", nullable = false, length = 1)
     private Boolean enabled;
 
-    @OneToMany
+    @JsonManagedReference
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "strapi_user_authority", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "authority_id"))
     private List<Authority> authorities;
 
-    @ManyToOne
+    @JsonManagedReference
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinTable(name = "strapi_user_group", joinColumns = @JoinColumn(name = "user_id"))
     private Group group;
 

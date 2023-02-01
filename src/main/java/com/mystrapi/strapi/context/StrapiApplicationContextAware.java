@@ -45,7 +45,7 @@ public class StrapiApplicationContextAware implements ApplicationContextAware {
         PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
         User user = User.builder().id(1L).username("admin").password("123456").enabled(true).build();
         Group group = Group.builder().id(1L).group("测试部门1").users(Collections.singletonList(user)).build();
-        Authority authority = Authority.builder().id(1L).auth("ROLE_ADMIN").group(group).user(user).build();
+        Authority authority = Authority.builder().id(1L).auth("ROLE_ADMIN").group(group).user(Collections.singletonList(user)).build();
         Menu menu = Menu.builder().name("用户信息").path("/user/userInfo").authority(authority).build();
         authorityRepository.save(authority);
         groupRepository.save(group);

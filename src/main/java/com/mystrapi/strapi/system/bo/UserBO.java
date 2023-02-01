@@ -3,6 +3,7 @@ package com.mystrapi.strapi.system.bo;
 import com.mystrapi.strapi.persistance.entity.strapi.User;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.core.GrantedAuthority;

@@ -1,5 +1,6 @@
 package com.mystrapi.strapi.persistance.entity.strapi;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -40,7 +41,8 @@ public class Document extends BaseEntity {
     @JdbcType(LongVarcharJdbcType.class)
     private String jsonContent;
 
-    @ManyToOne
+    @JsonManagedReference
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "channel_id", nullable = false)
     private Channel channel;
 
