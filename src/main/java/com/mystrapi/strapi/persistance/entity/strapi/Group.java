@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.List;
+
 /**
  * @author tangqiang
  */
@@ -14,6 +16,7 @@ import org.hibernate.annotations.GenericGenerator;
 @AllArgsConstructor
 @Entity
 @Table(name = "strapi_group")
+@ToString(exclude = {"users", "users", "authorities"})
 public class Group extends BaseEntity{
 
     @Id
@@ -24,4 +27,11 @@ public class Group extends BaseEntity{
     @Column(name = "user_group", unique = true, nullable = false)
     private String group;
 
+    @OneToMany
+    @JoinTable(name = "strapi_user_group", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private List<User> users;
+
+    @OneToMany
+    @JoinTable(name = "strapi_group_authority", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "authority_id"))
+    private List<Authority> authorities;
 }

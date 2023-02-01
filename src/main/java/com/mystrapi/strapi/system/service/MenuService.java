@@ -1,17 +1,13 @@
 package com.mystrapi.strapi.system.service;
 
 import cn.hutool.core.util.StrUtil;
-import com.mystrapi.strapi.system.bo.MenuBo;
-import com.mystrapi.strapi.persistance.entity.strapi.Authority;
-import com.mystrapi.strapi.persistance.entity.strapi.AuthorityMenu;
 import com.mystrapi.strapi.persistance.entity.strapi.Menu;
-import com.mystrapi.strapi.persistance.repository.strapi.AuthorityMenuRepository;
-import com.mystrapi.strapi.persistance.repository.strapi.AuthorityRepository;
 import com.mystrapi.strapi.persistance.repository.strapi.MenuRepository;
+import com.mystrapi.strapi.system.bo.MenuBo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Collections;
 import java.util.Optional;
 
 /**
@@ -22,8 +18,6 @@ import java.util.Optional;
 public class MenuService {
 
     private final MenuRepository menuRepository;
-    private final AuthorityMenuRepository authorityMenuRepository;
-    private final AuthorityRepository authorityRepository;
 
     public Optional<MenuBo> findMenuBoListByPath(String path) {
 
@@ -36,9 +30,9 @@ public class MenuService {
 
         optionalMenu.ifPresent(menu -> {
             menuBo.setMenu(menu);
-            List<AuthorityMenu> authorityMenus = authorityMenuRepository.findAuthorityMenuByMenuId(menu.getId());
-            List<Authority> authorities = authorityRepository.findAllById(authorityMenus.stream().map(AuthorityMenu::getAuthorityId).toList());
-            menuBo.setAuthorities(authorities);
+            if (menu.getAuthority() != null) {
+                menuBo.setAuthorities(Collections.singletonList(menu.getAuthority()));
+            }
         });
 
         return Optional.of(menuBo);

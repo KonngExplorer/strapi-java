@@ -23,7 +23,7 @@ public class SiteService {
      *
      * @return List<SiteView>
      */
-    public List<SiteBO> listSite() {
+    public List<SiteBO> findSiteList() {
         return siteRepository.findAll().stream().map(site -> SiteBO.builder()
                 .site(site)
                 .channelBOList(channelService.findChannelsByIdIn(site.getChannels().stream().map(Channel::getId).toList()))

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.List;
+
 /**
  * @author tangqiang
  */
@@ -14,6 +16,7 @@ import org.hibernate.annotations.GenericGenerator;
 @AllArgsConstructor
 @Entity
 @Table(name = "strapi_user")
+@ToString(exclude = {"authorities", "group"})
 public class User extends BaseEntity {
 
     @Id
@@ -30,5 +33,13 @@ public class User extends BaseEntity {
 
     @Column(name = "enabled", nullable = false, length = 1)
     private Boolean enabled;
+
+    @OneToMany
+    @JoinTable(name = "strapi_user_authority", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "authority_id"))
+    private List<Authority> authorities;
+
+    @ManyToOne
+    @JoinTable(name = "strapi_user_group", joinColumns = @JoinColumn(name = "user_id"))
+    private Group group;
 
 }

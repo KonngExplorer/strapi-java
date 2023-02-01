@@ -14,7 +14,8 @@ import org.hibernate.annotations.GenericGenerator;
 @AllArgsConstructor
 @Entity
 @Table(name = "strapi_menu")
-public class Menu extends BaseEntity{
+@ToString(exclude = {"authority"})
+public class Menu extends BaseEntity {
 
     @Id
     @Column(name = "id")
@@ -27,4 +28,8 @@ public class Menu extends BaseEntity{
 
     @Column(name = "name")
     private String name;
+
+    @ManyToOne
+    @JoinTable(name = "strapi_authority_menu", joinColumns = @JoinColumn(name = "menu_id"), inverseJoinColumns = @JoinColumn(name = "authority_id"))
+    private Authority authority;
 }

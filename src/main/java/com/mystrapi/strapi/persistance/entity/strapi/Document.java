@@ -16,6 +16,7 @@ import org.hibernate.type.descriptor.jdbc.LongVarcharJdbcType;
 @AllArgsConstructor
 @Entity
 @Table(name = "strapi_document")
+@ToString(exclude = {"channel"})
 public class Document extends BaseEntity {
 
     @Id
@@ -39,7 +40,8 @@ public class Document extends BaseEntity {
     @JdbcType(LongVarcharJdbcType.class)
     private String jsonContent;
 
-    @Column(name = "json_content")
-    private Long channelId;
+    @ManyToOne
+    @JoinColumn(name = "channel_id", nullable = false)
+    private Channel channel;
 
 }

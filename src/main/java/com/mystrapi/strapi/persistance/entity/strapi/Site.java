@@ -16,6 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "strapi_site")
+@ToString(exclude = {"channels"})
 public class Site extends BaseEntity {
 
     @Id
@@ -33,7 +34,6 @@ public class Site extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @OneToMany
-    @JoinColumn(name = "site_id", referencedColumnName = "id", nullable = false)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Channel> channels;
 }
