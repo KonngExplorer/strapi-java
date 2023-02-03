@@ -29,7 +29,7 @@ import java.io.PrintWriter;
  * @author tangqiang
  */
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity(debug = false)
 @Slf4j
 public class SecurityConfiguration {
 
@@ -146,7 +146,7 @@ public class SecurityConfiguration {
             if (exception instanceof BadVerifyCodeAuthenticationException) {
                 viewViewResult = ViewResult.failure("验证码错误", null);
             } else {
-                log.debug("[登录失败]", exception);
+                log.warn("[登录失败]", exception);
                 viewViewResult = ViewResult.failure("[登录失败] " + exception.getMessage(), null);
             }
             PrintWriter printWriter = response.getWriter();

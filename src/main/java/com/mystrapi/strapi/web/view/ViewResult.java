@@ -6,17 +6,18 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * rest controller 通用返回对象
+ *
  * @author tangqiang
  */
 @Data
 public class ViewResult<T> {
 
-    private int code;
+    private boolean success;
     private String msg;
     private T data;
 
-    public ViewResult(int code, String msg, T data) {
-        this.code = code;
+    public ViewResult(boolean success, String msg, T data) {
+        this.success = success;
         this.msg = msg;
         this.data = data;
     }
@@ -26,7 +27,7 @@ public class ViewResult<T> {
     }
 
     public static <T> ViewResult<T> success(String msg, T data) {
-        return ViewResult.<T>builder().code(1).msg(msg).data(data).build();
+        return ViewResult.<T>builder().code(true).msg(msg).data(data).build();
     }
 
     public static <T> ViewResult<T> failure(T data) {
@@ -34,7 +35,7 @@ public class ViewResult<T> {
     }
 
     public static <T> ViewResult<T> failure(String msg, T data) {
-        return ViewResult.<T>builder().code(0).msg(msg).data(data).build();
+        return ViewResult.<T>builder().code(false).msg(msg).data(data).build();
     }
 
     @Contract(value = " -> new", pure = true)
@@ -43,15 +44,15 @@ public class ViewResult<T> {
     }
 
     public static class ViewResultBuilder<T> {
-        private int code;
+        private boolean success;
         private String msg;
         private T data;
 
         public ViewResultBuilder() {
         }
 
-        public ViewResultBuilder<T> code(int code) {
-            this.code = code;
+        public ViewResultBuilder<T> code(boolean success) {
+            this.success = success;
             return this;
         }
 
@@ -66,7 +67,7 @@ public class ViewResult<T> {
         }
 
         public ViewResult<T> build() {
-            return new ViewResult<>(this.code, this.msg, this.data);
+            return new ViewResult<>(this.success, this.msg, this.data);
         }
     }
 
